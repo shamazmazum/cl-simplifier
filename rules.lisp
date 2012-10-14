@@ -56,8 +56,8 @@
 	(append (list '-  sym) rest)
       sym)))
 
-(defun sum-numbers (rest-values number1 number2 rest1)
-  (let ((rest (append rest-values rest1))
+(defun sum-numbers (rest-values number1 number2 rest1 rest2)
+  (let ((rest (append rest-values rest1 rest2))
 	(sum (+ number1 number2)))
     (cond
      (rest
@@ -86,14 +86,16 @@
 
 (defparameter *rules*
   `(((+ a1 r2 (- a1)) (nil r2) ,#'inverse-elements-elimination-1)
+    ((+ (- a1) r2 a1) (nil r2) ,#'inverse-elements-elimination-1)
     ((+ a1 a2 r2 (- a2)) ((a1) r2) ,#'inverse-elements-elimination-1)
     ((+ a1 a2 a3 r2 (- a3)) ((a1 a2) r2) ,#'inverse-elements-elimination-1)
-    ((+ n1 r1 n2) (n1 n2 r1) ,#'sum-numbers)
+    ((+ r1 n1 r2 n2) (n1 n2 r1 r2) ,#'sum-numbers)
 
     ((- a1 r1 a1) (nil r1) ,#'inverse-elements-elimination-2)
     ((- a1 a2 r1 (- a2)) (a1 nil r1) ,#'inverse-elements-elimination-3)
+    ((- a1 (- a2) r1 a2) (a1 nil r1) ,#'inverse-elements-elimination-3)
     ((- a1 a2 a3 r1 (- a3)) (a1 (a2) r1) ,#'inverse-elements-elimination-3)
-    ((- n1 r1 n2) (n1 n2 r2) ,#'sub-numbers-1)
+    ((- n1 r1 n2) (n1 n2 r1) ,#'sub-numbers-1)
     ((- s1 r1 n1 r2 n2) (s1 n1 n2 r1 r2) ,#'sub-numbers-2)
     
     ((+ r1 0) (nil r1) ,#'inverse-elements-elimination-1)

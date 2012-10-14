@@ -81,7 +81,7 @@
       (dolist (rule rules)
 	
 	(multiple-value-bind (matchp symbols rest-form)
-	    (match-rule (first rule) form)
+	    (match-rule (first rule) new-form)
 	  (if matchp
 	      (setq new-form (apply (third rule)
 				    rest-form
