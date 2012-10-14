@@ -1,0 +1,11 @@
+Simple algebraic simplifier for common lisp
+
+It's easy to use, just try something like that:
+
+(simplifier:simplify '(+ 654 f 7560 d 0)) => '(+ f 8214 d) 
+(simplifier:simplify '(+ d f (- d)) => f
+(simplifier:simplify '(- 5 d (- d) 6) => -1
+
+And so on. It is based on stupid patter matching algorithm. You can add
+your own rules in simplifier:*rules*. See comments inside source to learn how
+to do it.
