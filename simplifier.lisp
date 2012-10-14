@@ -62,6 +62,13 @@
 ;; (match-rule '(+ a1 r1 a1) '(+ a a)) => (values t '((a1 . a) (r1)) nil)
 ;; (match-rule '(+ a1 r1 a1) '(+ a a s)) => (values t '((a1 . a) (r1)) '(s))
 
+(defun construct-arguments (spec symbols)
+  "Constructs arguments for function assigned to a rule by
+   replacing rule variables by their actual values"
+  (loop for arg in spec collect
+	(if (atom arg) (cdr (assoc arg symbols))
+	  (construct-arguments arg symbols))))
+
 (defun simplify (form &optional (rules *rules*))
   "Tries to match each rule from *rules*
    If match, function assigned to rule is evaluated
@@ -74,11 +81,11 @@
       (dolist (rule rules)
 	
 	(multiple-value-bind (matchp symbols rest-form)
-	    (match-rule (car rule) form)
+	    (match-rule (first rule) form)
 	  (if matchp
-	      (setq new-form (apply (cdr rule)
+	      (setq new-form (apply (third rule)
 				    rest-form
-				    (loop for arg in symbols collect (cdr arg)))))))
+				    (construct-arguments (second rule) symbols))))))
 
       (if (not (equalp form new-form))
 	  (simplify new-form)
@@ -104,7 +111,7 @@
 
 	(let ((prev-value (cdr (assoc sub-rule symbols)))
 	      (sub-form (car form))
-	      (data-type (if (atom sub-rule)
+	      (data-type (if (symbolp sub-rule)
 			     (elt (symbol-name sub-rule) 0))))
 	  
 	  (cond
@@ -127,7 +134,7 @@
 	   ;; Collect elements of form in non-greedy manner
 	   ;; (Until next rule matches)
 	   ((and sub-form
-		 (char= #\R data-type))
+		 (eql #\R data-type))
 	    
 	    (let ((next-rule (list (nth (1+ i) rule)))
 		  rest-end)
@@ -158,16 +165,16 @@
 
 	   ;; Basic types of sub-rules, ie. atom, list, etc
 	   ((and sub-form
-		 (or (and (char= #\A data-type)
+		 (or (and (eql #\A data-type)
 			  (atom sub-form))
 		     
-		     (and (char= #\L data-type)
+		     (and (eql #\L data-type)
 			  (listp sub-form))
 		     
-		     (and (char= #\N data-type)
+		     (and (eql #\N data-type)
 			  (numberp sub-form))
 		     
-		     (and (char= #\S data-type)
+		     (and (eql #\S data-type)
 			  (symbolp sub-form))))
 	    
 	    (setq symbols
