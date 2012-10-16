@@ -25,8 +25,12 @@
 
 (in-package :simplifier)
 
-(defun inverse-elements-elimination-1 (rest-values rest1 rest2)
-  (let* ((rest (append rest-values rest1 rest2))
+(defun sum-rotate (rest-values rest1 elem)
+  (append '(+) (list (list '- elem)) rest-values rest1))
+
+(defun inverse-elements-elimination-1 (rest-values rest1)
+  "Used for eliminate inverse values in sum"
+  (let* ((rest (append rest-values rest1))
 	 (len (length rest)))
     (cond
      ((> len 1)
@@ -37,8 +41,10 @@
      
      (t 0))))
 
-(defun inverse-elements-elimination-2 (rest-values rest1 rest2)
-  (let* ((rest (append rest-values rest1 rest2))
+(defun inverse-elements-elimination-2 (rest-values rest1)
+  "Used for eliminate inverse values in substraction if one
+   of these values is the first argument"
+  (let* ((rest (append rest-values rest1))
 	 (len (length rest)))
     (cond
      ((> len 1)
@@ -49,12 +55,15 @@
      
      (t 0))))
 
-(defun inverse-elements-elimination-3 (rest-values sym rest1 rest2)
-  (let ((rest (append rest-values rest1 rest2)))
+(defun sub-rotate (rest-values first-arg rest1 negative-elem)
+  (append (list '- first-arg) (list (list '- negative-elem)) rest-values rest1))
+
+(defun inverse-elements-elimination-3 (rest-values first-arg rest1)
+  (let ((rest (append rest-values rest1)))
 
     (if rest
-	(append (list '-  sym) rest)
-      sym)))
+	(append (list '-  first-arg) rest)
+      first-arg)))
 
 (defun sum-numbers (rest-values number1 number2 rest1 rest2)
   (let ((rest (append rest-values rest1 rest2))
@@ -84,24 +93,31 @@
   (if rest-form (append (list '- number) rest-form)
     (- number)))
 
-(defparameter *rules*
-  `(((+ a1 r2 (- a1)) (nil r2) ,#'inverse-elements-elimination-1)
-    ((+ (- a1) r2 a1) (nil r2) ,#'inverse-elements-elimination-1)
-    ((+ a1 a2 r2 (- a2)) ((a1) r2) ,#'inverse-elements-elimination-1)
-    ((+ a1 a2 a3 r2 (- a3)) ((a1 a2) r2) ,#'inverse-elements-elimination-1)
-    ((+ r1 n1 r2 n2) (n1 n2 r1 r2) ,#'sum-numbers)
+(defun flatten-sum (rest-values rest1 rest2)
+  (append '(+) rest-values rest1 rest2))
 
-    ((- a1 r1 a1) (nil r1) ,#'inverse-elements-elimination-2)
-    ((- a1 a2 r1 (- a2)) (a1 nil r1) ,#'inverse-elements-elimination-3)
-    ((- a1 (- a2) r1 a2) (a1 nil r1) ,#'inverse-elements-elimination-3)
-    ((- a1 a2 a3 r1 (- a3)) (a1 (a2) r1) ,#'inverse-elements-elimination-3)
+(defun flatten-sub (rest-values first-arg rest1 rest2)
+  (append (list '- first-arg) rest1 rest2 rest-values))
+
+(defparameter *rules*
+  `(((+ r1 (- a1)) (r1 a1) ,#'sum-rotate)
+    ((+ (- a1) r1 a1) (r1) ,#'inverse-elements-elimination-1)
+
+    ((- a1 r1 a1) (r1) ,#'inverse-elements-elimination-2)
+    ((- a1 r1 (- a2)) (a1 r1 a2) ,#'sub-rotate)
+    ((- a1 (- a2) r1 a2) (a1 r1) ,#'inverse-elements-elimination-3)
+
+    ((+ r1 n1 r2 n2) (n1 n2 r1 r2) ,#'sum-numbers)
     ((- n1 r1 n2) (n1 n2 r1) ,#'sub-numbers-1)
     ((- s1 r1 n1 r2 n2) (s1 n1 n2 r1 r2) ,#'sub-numbers-2)
     
-    ((+ r1 0) (nil r1) ,#'inverse-elements-elimination-1)
-    ((- a1 r1 0) (a1 nil r1) ,#'inverse-elements-elimination-3)
+    ((+ r1 0) (r1) ,#'inverse-elements-elimination-1)
+    ((- a1 r1 0) (a1 r1) ,#'inverse-elements-elimination-3)
 
-    ((- n1) (n1) ,#'inverse))
+    ((- n1) (n1) ,#'inverse)
+
+    ((+ r1 (+ r2)) (r1 r2) ,#'flatten-sum)
+    #|((- a1 r1 (+ r2)) (a1 r1 r2) ,#'flatten-sub)|#)
   
   "List of values (list rule args func).
    If function #'simplify finds a match between 'rule'
