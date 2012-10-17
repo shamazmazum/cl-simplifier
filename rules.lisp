@@ -96,13 +96,19 @@
 (defun flatten-sum (rest-values rest1 rest2)
   (append '(+) rest-values rest1 rest2))
 
-(defun flatten-sub (rest-values first-arg rest1 rest2)
-  (append (list '- first-arg) rest1 rest2 rest-values))
+;;(defun flatten-sub (rest-values first-arg rest1 rest2)
+;;  (append (list '- first-arg) rest1 rest2 rest-values))
+
+(defun flatten-sub (rest-values rest1 rest2)
+  (if rest1 (append '(-) rest1 rest2 rest-values)
+    (append '(-) rest1 (list (cons '+ rest2)) rest-values)))
 
 (defparameter *rules*
   `(((+ r1 (- a1)) (r1 a1) ,#'sum-rotate)
     ((+ (- a1) r1 a1) (r1) ,#'inverse-elements-elimination-1)
 
+    ((r1 (- 0 a1)) (a1 r1) ,#'(lambda (rest-form element rest1)
+				(append rest1 (list (list '- element)) rest-form)))
     ((- a1 r1 a1) (r1) ,#'inverse-elements-elimination-2)
     ((- a1 r1 (- a2)) (a1 r1 a2) ,#'sub-rotate)
     ((- a1 (- a2) r1 a2) (a1 r1) ,#'inverse-elements-elimination-3)
@@ -115,10 +121,15 @@
     ((- a1 r1 0) (a1 r1) ,#'inverse-elements-elimination-3)
 
     ((- n1) (n1) ,#'inverse)
+    ((r1 (- (- a1))) (a1 r1) ,#'(lambda (rest-form element rest1)
+				(append rest1 (list element) rest-form)))
 
     ((+ r1 (+ r2)) (r1 r2) ,#'flatten-sum)
-    #|((- a1 r1 (+ r2)) (a1 r1 r2) ,#'flatten-sub)|#)
-  
+    #|((- a1 r1 (+ r2)) (a1 r1 r2) ,#'flatten-sub)|#
+    ;; Cannot do that due to bug in pattern matcher,
+    ;;but can do something like this:
+    ((- r1 (+ r2)) (r1 r2) ,#'flatten-sub))
+      
   "List of values (list rule args func).
    If function #'simplify finds a match between 'rule'
    and supplied form, it calls 'func'. Func must be a function
